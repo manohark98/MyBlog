@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple OpenSource Blog</title>
+  <style>
+    /* Global Styles */
+    body {
+      background-color: floralwhite;
+      color: #333;
+      font-family: monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    /* Content Container */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    /* Blog Post Styles */
+    h1, h2 {
+      margin-bottom: 15px;
+    }
+    p {
+      margin-bottom: 20px;
+    }
+    /* Code Snippet Container */
+    .code-container {
+      background-color: #f4f4f4;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+    /* Screenshot Container */
+    .screenshot {
+      margin: 20px 0;
+      text-align: center;
+    }
+    .screenshot img {
+      max-width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px;
+    }
+
+    /* Footer Styles */
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 0.9em;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>LilGradX - Neural Netowork From scratch</h1>
+    <p>Date: 2025-03-23</p>
+    <p>
+      I created this open‑source project for beginners to understand and get motivated in learning the inner workings of neural networks.
+      In this project, we implement our very own <code>Tensor</code> class which supports automatic differentiation.
+      The aim is to demystify how neural networks work under the hood.
+    </p>
+    <p>
+      Below is an example that demonstrates how to create a simple neuron operation using our <code>Tensor</code> class and how the gradients of weight changes for a backward propagation.
+    </p>
+    <p>
+      Equation : y = x*weight + bias
+    </p>
+    
+    <div class="code-container">
+      <pre><code>
+x = Tensor(2.0, label="input")
+
+weight = Tensor(5.0, label="w")
+bias = Tensor(1.0, label="b")
+
+y = x * weight + bias  
+      </code></pre>
+    </div>
+    
+    <div class="screenshot">
+      <img src="function.svg" alt="Screenshot of the Computational Graph">
+      <p>Figure 1: Visualization of the computational graph for the above operations.</p>
+    </div>
+    <p>
+      <strong>Backward Pass:</strong>
+    </p>
+    
+
+      <p>
+        Consider the operation: <code>y = x * weight + bias</code> where:
+      </p>
+      <ul>
+        <li><em>x</em> = 2.0</li>
+        <li><em>weight</em> = 5.0</li>
+        <li><em>bias</em> = 1.0</li>
+      </ul>
+      <p>
+        <strong>Step 1: Multiplication</strong><br>
+        The multiplication computes: <em>m</em> = x * weight = 2.0 * 5.0 = 10.0.<br>
+        <strong>Derivatives:</strong><br>
+        <span style="margin-left: 20px;">∂m/∂x = weight = 5.0</span><br>
+        <span style="margin-left: 20px;">∂m/∂weight = x = 2.0</span>
+      </p>
+      <p>
+        <strong>Step 2: Addition</strong><br>
+        The addition computes: y = m + bias = 10.0 + 1.0 = 11.0.<br>
+        <strong>Derivatives:</strong><br>
+        <span style="margin-left: 20px;">∂y/∂m = 1</span><br>
+        <span style="margin-left: 20px;">∂y/∂bias = 1</span>
+      </p>
+      <p>
+        <strong>Combining the Gradients (Chain Rule):</strong><br>
+        <span style="margin-left: 20px;">∂y/∂x = (∂y/∂m) * (∂m/∂x) = 1 * 5.0 = 5.0</span><br>
+        <span style="margin-left: 20px;">∂y/∂weight = (∂y/∂m) * (∂m/∂weight) = 1 * 2.0 = 2.0</span><br>
+        <span style="margin-left: 20px;">∂y/∂bias = 1</span>
+      </p>
+      <p>
+        This example illustrates that each mathematical operation contributes differently to the gradient:
+      </p>
+      <ul>
+        <li>
+          <strong>Multiplication:</strong> Scales the gradient by the other operand.
+          <br>For example, ∂(x * weight)/∂x = weight and ∂(x * weight)/∂weight = x.
+        </li>
+        <li>
+          <strong>Addition:</strong> Passes the gradient directly since the derivative of x + b with respect to each operand is 1.
+        </li>
+      </ul>
+
+    
+  </div>
+  <footer>
+    <p>&copy; 2025 My OpenSource Blog - LilGradX. All rights reserved.</p>
+  </footer>
+</body>
+</html>
