@@ -58,10 +58,46 @@
       color: #666;
     }
   </style>
+  <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
   <div class="container">
-    <h1>LilGradX - How Gradient Works</h1>
+    <header>
+      <div class="logo-container">
+        <div class="logo neural-network">
+          <svg viewBox="0 0 200 200" width="120" height="120">
+          <circle cx="50" cy="50" r="8" class="node"/>
+          <circle cx="50" cy="100" r="8" class="node"/>
+          <circle cx="50" cy="150" r="8" class="node"/>
+          
+          <circle cx="150" cy="75" r="8" class="node"/>
+          <circle cx="150" cy="125" r="8" class="node"/>
+          
+          <circle cx="100" cy="50" r="8" class="node"/>
+          <circle cx="100" cy="100" r="8" class="node"/>
+          <circle cx="100" cy="150" r="8" class="node"/>
+          
+          <line x1="50" y1="50" x2="100" y2="50" class="connection"/>
+          <line x1="50" y1="50" x2="100" y2="100" class="connection"/>
+          <line x1="50" y1="100" x2="100" y2="50" class="connection"/>
+          <line x1="50" y1="100" x2="100" y2="100" class="connection"/>
+          <line x1="50" y1="150" x2="100" y2="100" class="connection"/>
+          <line x1="50" y1="150" x2="100" y2="150" class="connection"/>
+          
+          <line x1="100" y1="50" x2="150" y2="75" class="connection"/>
+          <line x1="100" y1="100" x2="150" y2="75" class="connection"/>
+          <line x1="100" y1="100" x2="150" y2="125" class="connection"/>
+          <line x1="100" y1="150" x2="150" y2="125" class="connection"/>
+        </svg>
+        </div>
+        <div class="logo peacock">
+          <img src="Logo_Blog.png" alt="Blog Logo" width="120" height="120">
+        </div>
+      </div>
+
+
+    </header>
+    <h1 style="text-align: center;">LilGradX - How Gradient Works</h2>
     <p>Date: 2025-03-23</p>
     <p>
       I created this open‑source project for beginners to understand and get motivated in learning the inner workings of neural networks.
