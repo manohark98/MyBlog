@@ -193,7 +193,11 @@ h2::after {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
 }
-
+.project-blog {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 2rem;
+}
 .project-card {
   background: rgba(255, 255, 255, 0.8);
   padding: 2rem;
@@ -210,6 +214,11 @@ h2::after {
   transform: translateY(-5px) scale(1.02);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
   background: rgba(255, 255, 255, 0.9);
+}
+
+h3{  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
 }
 
 .project-card h3 {
