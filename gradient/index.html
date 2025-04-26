@@ -30,6 +30,11 @@
     p {
       margin-bottom: 20px;
     }
+    h2 {
+      margin-top: 30px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+    }
     /* Code Snippet Container */
     .code-container {
       background-color: #f4f4f4;
@@ -66,113 +71,118 @@
       <div class="logo-container">
         <div class="logo neural-network">
           <svg viewBox="0 0 200 200" width="120" height="120">
-          <circle cx="50" cy="50" r="8" class="node"/>
-          <circle cx="50" cy="100" r="8" class="node"/>
-          <circle cx="50" cy="150" r="8" class="node"/>
-          
-          <circle cx="150" cy="75" r="8" class="node"/>
-          <circle cx="150" cy="125" r="8" class="node"/>
-          
-          <circle cx="100" cy="50" r="8" class="node"/>
-          <circle cx="100" cy="100" r="8" class="node"/>
-          <circle cx="100" cy="150" r="8" class="node"/>
-          
-          <line x1="50" y1="50" x2="100" y2="50" class="connection"/>
-          <line x1="50" y1="50" x2="100" y2="100" class="connection"/>
-          <line x1="50" y1="100" x2="100" y2="50" class="connection"/>
-          <line x1="50" y1="100" x2="100" y2="100" class="connection"/>
-          <line x1="50" y1="150" x2="100" y2="100" class="connection"/>
-          <line x1="50" y1="150" x2="100" y2="150" class="connection"/>
-          
-          <line x1="100" y1="50" x2="150" y2="75" class="connection"/>
-          <line x1="100" y1="100" x2="150" y2="75" class="connection"/>
-          <line x1="100" y1="100" x2="150" y2="125" class="connection"/>
-          <line x1="100" y1="150" x2="150" y2="125" class="connection"/>
-        </svg>
+            <circle cx="50" cy="50" r="8" class="node"/>
+            <circle cx="50" cy="100" r="8" class="node"/>
+            <circle cx="50" cy="150" r="8" class="node"/>
+            <circle cx="150" cy="75" r="8" class="node"/>
+            <circle cx="150" cy="125" r="8" class="node"/>
+            <circle cx="100" cy="50" r="8" class="node"/>
+            <circle cx="100" cy="100" r="8" class="node"/>
+            <circle cx="100" cy="150" r="8" class="node"/>
+            <line x1="50" y1="50" x2="100" y2="50" class="connection"/>
+            <line x1="50" y1="50" x2="100" y2="100" class="connection"/>
+            <line x1="50" y1="100" x2="100" y2="50" class="connection"/>
+            <line x1="50" y1="100" x2="100" y2="100" class="connection"/>
+            <line x1="50" y1="150" x2="100" y2="100" class="connection"/>
+            <line x1="50" y1="150" x2="100" y2="150" class="connection"/>
+            <line x1="100" y1="50" x2="150" y2="75" class="connection"/>
+            <line x1="100" y1="100" x2="150" y2="75" class="connection"/>
+            <line x1="100" y1="100" x2="150" y2="125" class="connection"/>
+            <line x1="100" y1="150" x2="150" y2="125" class="connection"/>
+          </svg>
         </div>
         <div class="logo peacock">
           <img src="Logo_Blog.png" alt="Blog Logo" width="120" height="120">
         </div>
       </div>
-
-
     </header>
-    <h1 style="text-align: center;">LilGradX - How Gradient Works</h2>
-    <p>Date: 2025-03-23</p>
-    <p>
-      I created this open‑source project for beginners to understand and get motivated in learning the inner workings of neural networks.
-      In this project, we implement our very own <code>Tensor</code> class which supports automatic differentiation.
-      The aim is to demystify how neural networks work under the hood.
-    </p>
-    <p>
-      Below is an example that demonstrates how to create a simple neuron operation using our <code>Tensor</code> class and how the gradients of weight changes for a backward propagation.
-    </p>
-    <p>
-      Equation : y = x*weight + bias
-    </p>
-    
+
+    <h1 style="text-align: center;">LilGradX - How Gradients Really Work</h1>
+    <p>Date: March 23, 2025</p>
+
+    <h2>Introduction</h2>
+    <p>Deep learning libraries like PyTorch and TensorFlow make training neural networks look almost magical: you define a few layers, call <code>.backward()</code>, and—poof!—your weights update. But behind the scenes is a beautiful, systematic process called <strong>automatic differentiation</strong>, which hinges on the notion of a <strong>gradient</strong>. In LilGradX we peel back that curtain: we’ll build a tiny <code>Tensor</code> class, track every operation in a computational graph, and manually compute gradients via the chain rule.</p>
+
+    <h2>Why Gradients Matter</h2>
+    <ul>
+      <li><strong>Optimization:</strong> Gradients tell us which direction in parameter space will reduce our loss function most quickly.</li>
+      <li><strong>Learning:</strong> In neural networks, we use gradients to nudge weights incrementally, making the network better at its task.</li>
+      <li><strong>Intuition:</strong> Understanding gradients demystifies much of "deep learning magic" and empowers you to debug tricky training dynamics.</li>
+    </ul>
+
+    <h2>Our Tiny <code>Tensor</code> Class</h2>
+    <p>We’ll implement a minimal <code>Tensor</code> that holds a value, records its parents, and stores a backward function:</p>
     <div class="code-container">
-      <pre><code>
-x = Tensor(2.0, label="input")
+<pre><code>  class Tensor:
+  def __init__(self, data, _children=(), _op='', label='', requires_grad=True):
+      
+      self.data = np.array(data, dtype=np.float32)
+      self.requires_grad = requires_grad
+      self.grad = np.zeros_like(self.data, dtype=np.float32) if requires_grad else None
+      self._backward = lambda: None
+      self._prev = set(_children)
+</code></pre>
+    </div>
 
+    <h2>Building the Computational Graph</h2>
+    <p>Consider the simple neuron:</p>
+    <div class="code-container">
+<pre><code>x      = Tensor(2.0, label="x")
 weight = Tensor(5.0, label="w")
-bias = Tensor(1.0, label="b")
+bias   = Tensor(1.0, label="b")
 
-y = x * weight + bias  
-      </code></pre>
+y = x * weight      # multiplication
+y = y + bias        # addition
+</code></pre>
     </div>
-    
     <div class="screenshot">
-      <img src="function.svg" alt="Screenshot of the Computational Graph">
-      <p>Figure 1: Visualization of the computational graph for the above operations.</p>
+      <img src="function.svg" alt="Computational graph">
+      <p>Figure 1: Each arrow shows data flow (forward) and each node knows how to backpropagate.</p>
     </div>
-    <p>
-      <strong>Backward Pass:</strong>
-    </p>
-    
 
-      <p>
-        Consider the operation: <code>y = x * weight + bias</code> where:
-      </p>
-      <ul>
-        <li><em>x</em> = 2.0</li>
-        <li><em>weight</em> = 5.0</li>
-        <li><em>bias</em> = 1.0</li>
-      </ul>
-      <p>
-        <strong>Step 1: Multiplication</strong><br>
-        The multiplication computes: <em>m</em> = x * weight = 2.0 * 5.0 = 10.0.<br>
-        <strong>Derivatives:</strong><br>
-        <span style="margin-left: 20px;">∂m/∂x = weight = 5.0</span><br>
-        <span style="margin-left: 20px;">∂m/∂weight = x = 2.0</span>
-      </p>
-      <p>
-        <strong>Step 2: Addition</strong><br>
-        The addition computes: y = m + bias = 10.0 + 1.0 = 11.0.<br>
-        <strong>Derivatives:</strong><br>
-        <span style="margin-left: 20px;">∂y/∂m = 1</span><br>
-        <span style="margin-left: 20px;">∂y/∂bias = 1</span>
-      </p>
-      <p>
-        <strong>Combining the Gradients (Chain Rule):</strong><br>
-        <span style="margin-left: 20px;">∂y/∂x = (∂y/∂m) * (∂m/∂x) = 1 * 5.0 = 5.0</span><br>
-        <span style="margin-left: 20px;">∂y/∂weight = (∂y/∂m) * (∂m/∂weight) = 1 * 2.0 = 2.0</span><br>
-        <span style="margin-left: 20px;">∂y/∂bias = 1</span>
-      </p>
-      <p>
-        This example illustrates that each mathematical operation contributes differently to the gradient:
-      </p>
-      <ul>
-        <li>
-          <strong>Multiplication:</strong> Scales the gradient by the other operand.
-          <br>For example, ∂(x * weight)/∂x = weight and ∂(x * weight)/∂weight = x.
-        </li>
-        <li>
-          <strong>Addition:</strong> Passes the gradient directly since the derivative of x + b with respect to each operand is 1.
-        </li>
-      </ul>
+    <h2>Forward Pass: Computing Values</h2>
+    <p><strong>Multiplication:</strong> m = x × w = 2.0 × 5.0 = 10.0</p>
+    <p><strong>Addition:</strong> y = m + b = 10.0 + 1.0 = 11.0</p>
 
-    
+    <h2>Backward Pass: Applying the Chain Rule</h2>
+    <p>We set <code>y.grad = 1.0</code> and propagate gradients in reverse:</p>
+    <p><strong>Step 1: Addition Node</strong><br>
+    &thinsp;&thinsp;∂y/∂m = 1 → <code>m.grad += 1 * y.grad</code><br>
+    &thinsp;&thinsp;∂y/∂b = 1 → <code>bias.grad += 1 * y.grad</code></p>
+    <p><strong>Step 2: Multiplication Node</strong><br>
+    &thinsp;&thinsp;∂m/∂x = w = 5.0 → <code>x.grad += w.value * m.grad</code><br>
+    &thinsp;&thinsp;∂m/∂w = x = 2.0 → <code>weight.grad += x.value * m.grad</code></p>
+
+    <h2>Putting It All Together</h2>
+    <div class="code-container">
+<pre><code># Forward
+y = x * weight + bias
+
+# Initialize gradient on output
+y.grad = 1.0
+
+# Backward
+# addition and multiplication nodes propagate grads
+</code></pre>
+    </div>
+
+    <h2>Why This Matters</h2>
+    <ul>
+      <li><strong>Transparency:</strong> See exactly how each operation contributes to the final gradient.</li>
+      <li><strong>Debugging:</strong> Diagnose exploding/vanishing gradients or incorrect flows.</li>
+      <li><strong>Extensibility:</strong> Add new ops by recording inputs and defining backward functions.</li>
+    </ul>
+
+    <h2>Next Steps</h2>
+    <ul>
+      <li>Extend to vector/matrix ops to build full neural networks.</li>
+      <li>Visualize gradient flow in deeper architectures.</li>
+      <li>Experiment with learning rates and compare with PyTorch’s autograd.</li>
+    </ul>
+
+    <h2>Conclusion</h2>
+    <p>Automatic differentiation is the engine of modern deep learning. By building LilGradX from scratch, you gain intimate insight into computational graphs, chain-rule bookkeeping, and gradient propagation—no more mystery behind <code>.backward()</code>!</p>
+
   </div>
   <footer>
     <p>&copy; 2025 My OpenSource Blog - LilGradX. All rights reserved.</p>
