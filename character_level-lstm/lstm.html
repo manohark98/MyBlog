@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple OpenSource Blog</title>
+  <style>
+    /* Global Styles */
+    body {
+      background-color: floralwhite;
+      color: #333;
+      font-family: monospace;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    /* Content Container */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    /* Blog Post Styles */
+    h1, h2 {
+      margin-bottom: 15px;
+    }
+    p {
+      margin-bottom: 20px;
+    }
+    h2 {
+      margin-top: 30px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+    }
+    /* Code Snippet Container */
+    .code-container {
+      background-color: #f4f4f4;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+    /* Screenshot Container */
+    .screenshot {
+      margin: 20px 0;
+      text-align: center;
+    }
+    .screenshot img {
+      max-width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px;
+    }
+
+    /* Footer Styles */
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 0.9em;
+      color: #666;
+    }
+  </style>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-container">
+        <div class="logo neural-network">
+          <svg viewBox="0 0 200 200" width="120" height="120">
+            <circle cx="50" cy="50" r="8" class="node"/>
+            <circle cx="50" cy="100" r="8" class="node"/>
+            <circle cx="50" cy="150" r="8" class="node"/>
+            <circle cx="150" cy="75" r="8" class="node"/>
+            <circle cx="150" cy="125" r="8" class="node"/>
+            <circle cx="100" cy="50" r="8" class="node"/>
+            <circle cx="100" cy="100" r="8" class="node"/>
+            <circle cx="100" cy="150" r="8" class="node"/>
+            <line x1="50" y1="50" x2="100" y2="50" class="connection"/>
+            <line x1="50" y1="50" x2="100" y2="100" class="connection"/>
+            <line x1="50" y1="100" x2="100" y2="50" class="connection"/>
+            <line x1="50" y1="100" x2="100" y2="100" class="connection"/>
+            <line x1="50" y1="150" x2="100" y2="100" class="connection"/>
+            <line x1="50" y1="150" x2="100" y2="150" class="connection"/>
+            <line x1="100" y1="50" x2="150" y2="75" class="connection"/>
+            <line x1="100" y1="100" x2="150" y2="75" class="connection"/>
+            <line x1="100" y1="100" x2="150" y2="125" class="connection"/>
+            <line x1="100" y1="150" x2="150" y2="125" class="connection"/>
+          </svg>
+        </div>
+        <div class="logo peacock">
+          <img src="Logo_Blog.png" alt="Blog Logo" width="120" height="120">
+        </div>
+      </div>
+    </header>
+
+    <h1 style="text-align: center;">LilGradX - Understanding LSTM Networks</h1>
+    <p>Date: April 26, 2025</p>
+
+    <h2>Introduction</h2>
+    <p>Imagine reading a story: you remember the characters, the plot twists, and how they connect chapter by chapter. To teach computers to understand sequences like stories, music, or even the spelling of names, we need a mechanism that can both remember and forget—just like our brains. That’s where <strong>Long Short-Term Memory</strong> (LSTM) networks come in. In this post, I’ll explain LSTMs with simple analogies and step-by-step code snippets, so even non-technical readers can follow along.</p>
+
+    <h2>Why LSTMs Matter</h2>
+    <p>Think about predicting the next character in a name: to guess “n” in “Kandadai,” you must recall the earlier letters. Standard RNNs often lose track of information over time. LSTMs, however, have a special memory cell that can hold onto important details and ignore distractions. Key benefits:</p>
+    <ul>
+      <li><strong>Memory Like a Notebook:</strong> LSTMs store important facts in a “notebook” (cell state) that travels through time.</li>
+      <li><strong>Selective Attention:</strong> Gates act like “doorman” filters, deciding what to write down or erase.</li>
+      <li><strong>Real-World Uses:</strong> From keyboard autocorrect that remembers your typing style to apps generating realistic names, LSTMs power many everyday AI features.</li>
+    </ul>
+
+    <h2>Anatomy of an LSTM Cell</h2>
+    <p>Imagine an LSTM cell as a guarded room with three doors:</p>
+    <ul>
+      <li><strong>Forget Door (f<sub>t</sub>):</strong> Decides which old notes to shred from the cell.</li>
+      <li><strong>Input Door (i<sub>t</sub>):</strong> Chooses which new notes to add based on the current character.</li>
+      <li><strong>Output Door (o<sub>t</sub>):</strong> Reveals what the room should share as the hidden state.</li>
+    </ul>
+    <div class="screenshot">
+      <img style="width:400px;" src="lstm.png" alt="LSTM Cell Diagram">
+      <p>Figure 1: The gated room (cell state) keeps and shares information selectively.</p>
+    </div>
+
+    <h2>Role of Character Embeddings</h2>
+    <p>Before feeding characters into our LSTM, we convert each character (like 'K', 'a', 'n') into a dense vector called an <strong>embedding</strong>. Think of embeddings as unique word stamps for characters—each stamp captures relationships (e.g., 'a' and 'e' might end up closer in stamp-space if they behave similarly). These embeddings let the LSTM work with numbers instead of raw letters:</p>
+    <div class="code-container">
+<pre><code># Map each character index to a vector of size embed_dim
+embedding = torch.nn.Embedding(vocab_size, embed_dim)
+char_idx = torch.tensor([char_to_index['K']])
+char_vec = embedding(char_idx)  # e.g. tensor([0.12, -0.03, …])
+</code></pre>
+    </div>
+    <p>These character vectors serve as inputs x<sub>t</sub> to the LSTMCell, enabling the network to learn patterns at the level of letters.</p>
+
+    <h2>How the Gates Work </h2>
+    <p>At each step, the LSTM uses three simple rules (equations) to manage its memory:</p>
+    <ul>
+      <li><strong>Forget:</strong> Should we forget yesterday’s letter influence? (Value between 0 and 1.)</li>
+      <li><strong>Input:</strong> How much of today’s character should we store?</li>
+      <li><strong>Output:</strong> What’s the most relevant information to share now?</li>
+    </ul>
+    <p>These decisions happen via basic math (sigmoid and tanh), but underneath, it’s just multiplying, adding, and deciding what to keep or toss.</p>
+
+    <h2>Implementing an LSTMCell in Code</h2>
+    <p>You don’t need a PhD—here’s a concise Python version for character-level sequences:</p>
+    <div class="code-container">
+<pre><code>class LSTMCell:
+    def __init__(self, input_dim, hidden_dim):
+        # Four simple weight layers, one per gate
+        self.W_f = LinearLayer(input_dim + hidden_dim, hidden_dim)
+        self.W_i = LinearLayer(input_dim + hidden_dim, hidden_dim)
+        self.W_c = LinearLayer(input_dim + hidden_dim, hidden_dim)
+        self.W_o = LinearLayer(input_dim + hidden_dim, hidden_dim)
+
+    def __call__(self, x_t, h_prev, c_prev):
+        # Merge prior memory (h_prev) with new input (x_t)
+        combined = torch.cat([h_prev, x_t], dim=1)
+
+        # Gates compute how much information to keep or discard
+        f_t = torch.sigmoid(self.W_f(combined))  # Forget door
+        i_t = torch.sigmoid(self.W_i(combined))  # Input door
+        ĉ_t = torch.tanh(self.W_c(combined))     # Candidate notes
+
+        c_t = f_t * c_prev + i_t * ĉ_t            # Update cell memory
+        o_t = torch.sigmoid(self.W_o(combined))  # Output door
+        h_t = o_t * torch.tanh(c_t)               # New hidden state
+
+        return h_t, c_t  # Return updated states
+</code></pre>
+    </div>
+
+    <h2>Putting It to Work on Names</h2>
+    <p>Let’s generate a name one character at a time. We start with blank memory and feed in each character embedding:</p>
+    <div class="code-container">
+<pre><code># Initialize blank states
+h, c = init_states(batch_size, hidden_dim)
+
+# Example name as indices: ['K','a','n','d','a','d','a','i']
+for char_idx in name_indices:
+    x_t = embedding(torch.tensor([char_idx]))
+    h, c = lstm_cell(x_t, h, c)
+
+# Use final hidden state to predict next character
+logits = output_layer(h)
+next_char_idx = torch.argmax(logits, dim=1).item()
+print(index_to_char[next_char_idx])  # e.g. 'i'
+</code></pre>
+    </div>
+    <p>The LSTM cleverly builds context across characters—remembering prefixes like "Kan" and using them to predict what comes next.</p>
+
+    <h2>Conclusion</h2>
+    <p>LSTM networks are like smart librarians: they keep useful notes, shred outdated ones, and provide the right character at the right time. By adding character embeddings, we map symbols into a space where the LSTM can learn letter patterns, making it ideal for name generation, text prediction, and any task requiring sequence memory.</p>
+
+  </div>
+  <footer>
+    <p>&copy; 2025 My OpenSource Blog - LilGradX. All rights reserved.</p>
+  </footer>
+</body>
+</html>
