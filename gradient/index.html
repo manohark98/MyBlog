@@ -101,87 +101,132 @@
     <p>Date: March 23, 2025</p>
 
     <h2>Introduction</h2>
-    <p>Deep learning libraries like PyTorch and TensorFlow make training neural networks look almost magical: you define a few layers, call <code>.backward()</code>, and—poof!—your weights update. But behind the scenes is a beautiful, systematic process called <strong>automatic differentiation</strong>, which hinges on the notion of a <strong>gradient</strong>. In LilGradX we peel back that curtain: we’ll build a tiny <code>Tensor</code> class, track every operation in a computational graph, and manually compute gradients via the chain rule.</p>
+    <p>Deep learning frameworks make training neural networks look almost magical: define layers, call <code>.backward()</code>, and weights update. In reality, <strong>automatic differentiation</strong> powers this process, systematically computing how every operation contributes to the final gradient. In LilGradX, we'll build from scratch a tiny <code>Tensor</code> class that records operations in a computational graph and applies the chain rule to compute gradients.</p>
 
     <h2>Why Gradients Matter</h2>
     <ul>
-      <li><strong>Optimization:</strong> Gradients tell us which direction in parameter space will reduce our loss function most quickly.</li>
-      <li><strong>Learning:</strong> In neural networks, we use gradients to nudge weights incrementally, making the network better at its task.</li>
-      <li><strong>Intuition:</strong> Understanding gradients demystifies much of "deep learning magic" and empowers you to debug tricky training dynamics.</li>
+      <li><strong>Optimization:</strong> Gradients point in the quickest way to improve (reduce) our loss function.</li>
+      <li><strong>Learning:</strong> Neural nets tweak weights using gradients so that performance improves step by step.</li>
+      <li><strong>Clarity:</strong> Knowing how gradients flow demystifies training dynamics and helps debug issues like exploding or vanishing gradients.</li>
     </ul>
 
     <h2>Our Tiny <code>Tensor</code> Class</h2>
-    <p>We’ll implement a minimal <code>Tensor</code> that holds a value, records its parents, and stores a backward function:</p>
+    <p>This core class stores a numeric value, tracks its parents, and defines how to backpropagate through each operation:</p>
     <div class="code-container">
-<pre><code>  class Tensor:
-  def __init__(self, data, _children=(), _op='', label='', requires_grad=True):
-      
-      self.data = np.array(data, dtype=np.float32)
-      self.requires_grad = requires_grad
-      self.grad = np.zeros_like(self.data, dtype=np.float32) if requires_grad else None
-      self._backward = lambda: None
-      self._prev = set(_children)
+<pre><code>class Tensor:
+    def __init__(self, data, _children=(), _op='', label='', requires_grad=True):
+        self.data = np.array(data, dtype=np.float32)
+        self.requires_grad = requires_grad
+        self.grad = np.zeros_like(self.data, dtype=np.float32) if requires_grad else None
+        self._backward = lambda: None
+        self._prev = set(_children)
+        self._op = _op
+        self.label = label
+</code></pre>
+
+    </div>
+    <h3>Method Breakdown</h3>
+    <p><strong><code>__init__</code></strong>: Initializes a new tensor. <code>data</code> is wrapped in a NumPy array. <code>_children</code> lists parent tensors (inputs), <code>_op</code> names the operation, and <code>requires_grad</code> toggles gradient tracking. If gradients are tracked, <code>self.grad</code> starts at zero.</p>
+    <p><strong><code>__repr__</code></strong>: Returns a simple string showing the tensor’s data, useful for debugging.</p>
+
+    <h3>Arithmetic Operations</h3>
+    <p>Every arithmetic method follows the same pattern:</p>
+    <ol>
+      <li>Wrap non-tensors into tensors (constants don’t need grads).</li>
+      <li>Compute the forward value (e.g., <code>self.data + other.data</code>).</li>
+      <li>Create a new <code>Tensor</code> node, linking to both inputs.</li>
+      <li>Define an inner <code>_backward()</code> that applies local derivatives to propagate <code>out.grad</code> back into the inputs’ <code>.grad</code>.</li>
+    </ol>
+    <div class="code-container">
+<pre><code>def __add__(self, other):
+    # Forward: add values
+    out = Tensor(self.data + other.data, (self, other), '+', requires_grad)
+    # Backward: distribute gradient
+    def _backward():
+        if self.requires_grad: self.grad += out.grad
+        if other.requires_grad: other.grad += out.grad
+    out._backward = _backward
+    return out
+
+def __mul__(self, other):
+    out = Tensor(self.data * other.data, (self, other), '*', requires_grad)
+    def _backward():
+        if self.requires_grad: self.grad += other.data * out.grad
+        if other.requires_grad: other.grad += self.data * out.grad
+    out._backward = _backward
+    return out
 </code></pre>
     </div>
 
-    <h2>Building the Computational Graph</h2>
-    <p>Consider the simple neuron:</p>
-    <div class="code-container">
-<pre><code>x      = Tensor(2.0, label="x")
-weight = Tensor(5.0, label="w")
-bias   = Tensor(1.0, label="b")
+    <h3>Other Helpers</h3>
+    <p><strong><code>__pow__</code></strong>: Raises the tensor to a constant power. Backward uses the rule d(xⁿ)/dx = n·xⁿ⁻¹.</p>
+    <p><strong><code>__sub__, __neg__, __truediv__</code></strong>: Built from <code>__add__</code>, <code>__mul__</code>, and <code>__pow__</code> so subtraction, negation, and division all flow gradients correctly.</p>
 
-y = x * weight      # multiplication
-y = y + bias        # addition
+    <h3>Activation & Math Ops</h3>
+    <p>Nonlinearities and special functions each record their forward pass and implement a matching backward:</p>
+    <ul>
+      <li><strong><code>tanh()</code></strong>: Uses <code>np.tanh</code>. Backward multiplies by (1 – tanh²).</li>
+      <li><strong><code>exp()</code></strong>: Uses <code>np.exp</code>. Backward uses the same output value.</li>
+      <li><strong><code>log()</code></strong>: Stabilized to avoid log(0). Backward = 1/x.</li>
+      <li><strong><code>leaky_relu(alpha)</code></strong>: Keeps positive values, scales negatives by <code>alpha</code>. Backward uses slope 1 or <code>alpha</code> accordingly.</li>
+    </ul>
+
+    <h3>Backward Pass: Chain Rule in Action</h3>
+    <p>When you call <code>.backward()</code> on a final tensor (usually a loss), here's what happens:</p>
+    <ol>
+      <li><strong>Topological sort:</strong> Recursively gather all upstream nodes into a list in forward order.</li>
+      <li><strong>Seed gradient:</strong> Set <code>self.grad = 1</code> on the output tensor.</li>
+      <li><strong>Reverse traversal:</strong> Walk nodes backward, calling each node’s <code>_backward()</code> to accumulate gradients into its inputs.</li>
+    </ol>
+    <div class="code-container">
+<pre><code>def backward(self):
+    # Build graph order
+    topo, visited = [], set()
+    def build(v):
+        if v not in visited:
+            visited.add(v)
+            for p in v._prev: build(p)
+            topo.append(v)
+    build(self)
+
+    # Seed output gradient
+    self.grad = np.ones_like(self.data)
+    # Apply each node’s backward
+    for node in reversed(topo): node._backward()
 </code></pre>
     </div>
-    <div class="screenshot">
-      <img src="function.svg" alt="Computational graph">
-      <p>Figure 1: Each arrow shows data flow (forward) and each node knows how to backpropagate.</p>
-    </div>
 
-    <h2>Forward Pass: Computing Values</h2>
-    <p><strong>Multiplication:</strong> m = x × w = 2.0 × 5.0 = 10.0</p>
-    <p><strong>Addition:</strong> y = m + b = 10.0 + 1.0 = 11.0</p>
-
-    <h2>Backward Pass: Applying the Chain Rule</h2>
-    <p>We set <code>y.grad = 1.0</code> and propagate gradients in reverse:</p>
-    <p><strong>Step 1: Addition Node</strong><br>
-    &thinsp;&thinsp;∂y/∂m = 1 → <code>m.grad += 1 * y.grad</code><br>
-    &thinsp;&thinsp;∂y/∂b = 1 → <code>bias.grad += 1 * y.grad</code></p>
-    <p><strong>Step 2: Multiplication Node</strong><br>
-    &thinsp;&thinsp;∂m/∂x = w = 5.0 → <code>x.grad += w.value * m.grad</code><br>
-    &thinsp;&thinsp;∂m/∂w = x = 2.0 → <code>weight.grad += x.value * m.grad</code></p>
+    <h3>Utility Methods</h3>
+    <ul>
+      <li><strong><code>detach()</code></strong>: Returns a new tensor with the same values but <code>requires_grad=False</code>, breaking its history.</li>
+      <li><strong><code>set_requires_grad(flag)</code></strong>: Turns gradient tracking on or off for an existing tensor, initializing or clearing <code>.grad</code> as needed.</li>
+    </ul>
 
     <h2>Putting It All Together</h2>
     <div class="code-container">
-<pre><code># Forward
-y = x * weight + bias
+<pre><code># Example: simple neuron
+input      = Tensor(2.0, label="input")
+weight = Tensor(5.0, label="w")
+bias   = Tensor(1.0, label="b")
 
-# Initialize gradient on output
-y.grad = 1.0
+# Forward pass
+y = input * weight + bias
 
-# Backward
-# addition and multiplication nodes propagate grads
+# Backward pass
+y.backward()
+
+# Now input.grad, weight.grad, bias.grad are populated
 </code></pre>
+
+<div class="screenshot">
+  <img src="function.svg" alt="Computational graph">
+  <p>Figure 1: Each arrow shows data flow (forward) and each node knows how to backpropagate.</p>
+</div>
     </div>
 
-    <h2>Why This Matters</h2>
-    <ul>
-      <li><strong>Transparency:</strong> See exactly how each operation contributes to the final gradient.</li>
-      <li><strong>Debugging:</strong> Diagnose exploding/vanishing gradients or incorrect flows.</li>
-      <li><strong>Extensibility:</strong> Add new ops by recording inputs and defining backward functions.</li>
-    </ul>
-
-    <h2>Next Steps</h2>
-    <ul>
-      <li>Extend to vector/matrix ops to build full neural networks.</li>
-      <li>Visualize gradient flow in deeper architectures.</li>
-      <li>Experiment with learning rates and compare with PyTorch’s autograd.</li>
-    </ul>
 
     <h2>Conclusion</h2>
-    <p>Automatic differentiation is the engine of modern deep learning. By building LilGradX from scratch, you gain intimate insight into computational graphs, chain-rule bookkeeping, and gradient propagation—no more mystery behind <code>.backward()</code>!</p>
+    <p>Automatic differentiation is the engine of modern deep learning. By building LilGradX from scratch, you gain intimate insight into computational graphs, chain-rule bookkeeping, and gradient propagation , which make you feel that there is  no more mystery behind  <strong>.backward()</strong>!</p>
 
   </div>
   <footer>
